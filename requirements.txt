@@ -1,0 +1,12 @@
+pandas
+numpy
+streamlit
+matplotlib
+spacy
+PyPDF2
+beautifulsoup4
+requests
+PyMuPDF
+langchain-groq
+markdown
+python-dotenv
