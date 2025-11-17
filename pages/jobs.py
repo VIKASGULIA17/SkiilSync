@@ -4,7 +4,7 @@ import os
 from web_scraping.web_scraping_jobs import load_or_scrape_jobs
 
 st.set_page_config(page_title="Job Opportunities Portal", layout="wide")
- 
+
 st.markdown(
     """
     <div style='text-align: center; padding: 10px; margin-bottom : 30px; background: linear-gradient(135deg, #f4eaff, #e9dfff); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);'>
@@ -24,7 +24,7 @@ col1, col2, col3 = st.columns([2, 1, 1])
 
 with col2:
     if st.button("🔄 Refresh Jobs", help="Scrape latest jobs from Internshala"):
-        df = load_or_scrape_jobs(force_refresh=True, num_pages=2)
+        df = load_or_scrape_jobs(force_refresh=True, num_pages=21)
         st.rerun()
 
 with col3:
@@ -34,8 +34,8 @@ with col3:
         file_time = datetime.fromtimestamp(os.path.getmtime(csv_path))
         st.caption(f"📅 Last updated: {file_time.strftime('%Y-%m-%d %H:%M')}")
 
-# Load jobs (will auto-scrape if data is old or missing)
-df = load_or_scrape_jobs(csv_path="data/cleaned_job_data.csv", num_pages=2)
+# Load jobs (auto-scrape if missing/old)
+df = load_or_scrape_jobs(csv_path="data/cleaned_job_data.csv")
 
 if df.empty:
     st.error("❌ Unable to load job data. Please try refreshing.")
@@ -53,15 +53,15 @@ selected_experience = st.selectbox("Select Job Experience", options=['--Select y
 if selected_category == '--Select Category--' and selected_experience == '--Select your Experience--':
     filtered_df = df[['Job Title', 'Company', 'Salary', 'Experience', 'Job link']]
     st.subheader(f"📄 All Job Listings ({len(filtered_df)} jobs)")
-    
+
 elif selected_category != '--Select Category--' and selected_experience != '--Select your Experience--':
     filtered_df = df[(df['Category'] == selected_category) & (df['Experience'] == selected_experience)][['Job Title', 'Company', 'Salary', 'Experience', 'Job link']]
     st.subheader(f"📄 Job Listings for {selected_category} - {selected_experience} ({len(filtered_df)} jobs)")
-    
+
 elif selected_category != '--Select Category--':
     filtered_df = df[df['Category'] == selected_category][['Job Title', 'Company', 'Salary', 'Experience', 'Job link']]
     st.subheader(f"📄 Job Listings for {selected_category} ({len(filtered_df)} jobs)")
-    
+
 elif selected_experience != '--Select your Experience--':
     filtered_df = df[df['Experience'] == selected_experience][['Job Title', 'Company', 'Salary', 'Experience', 'Job link']]
     st.subheader(f"📄 Job Listings for {selected_experience} level ({len(filtered_df)} jobs)")
@@ -69,6 +69,7 @@ elif selected_experience != '--Select your Experience--':
 # Footer stats
 st.markdown("---")
 col1, col2, col3 = st.columns(3)
+
 with col1:
     st.metric("Total Jobs", len(df))
 with col2:
@@ -90,7 +91,7 @@ else:
             st.markdown(
                 f"""
                 <div style='border: 1px solid #e0e0e0; border-radius: 10px; padding: 15px; margin: 10px 0;
-                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 1px 5px rgba(200, 150, 255, 0.3);'>
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); box-shadow: 0 1px 5px rgba(200, 150, 255, 0.3);'>
                     <h4 style='margin-bottom: 5px; color: #2c3e50;'>{row['Job Title']}</h4>
                     <p style='margin: 2px 0;'><strong>🏢 Company:</strong> {row['Company']}</p>
                     <p style='margin: 2px 0;'><strong>💰 Salary:</strong> {row['Salary']}</p>
@@ -100,4 +101,3 @@ else:
                 """,
                 unsafe_allow_html=True
             )
-
