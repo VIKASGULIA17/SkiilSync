@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+python-dotenv
+pandas
+numpy
+PyMuPDF
+beautifulsoup4
+requests
+langchain-groq
+pydantic-settings
+python-multipart
+pyjwt==2.8.0

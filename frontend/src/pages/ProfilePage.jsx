@@ -1,0 +1,638 @@
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
+import ErrorBanner from '../components/ErrorBanner.jsx';
+
+export default function ProfilePage() {
+  const { user } = useAuth();
+  const fileInputRef = useRef(null);
+  const resumeInputRef = useRef(null);
+
+  // States
+  const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
+  
+  // Profile field states
+  const [fullName, setFullName] = useState('');
+  const [headline, setHeadline] = useState('');
+  const [location, setLocation] = useState('');
+  const [bio, setBio] = useState('');
+  const [avatar, setAvatar] = useState(null);
+  const [skills, setSkills] = useState([]);
+  const [newSkill, setNewSkill] = useState('');
+  
+  // Social links
+  const [github, setGithub] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [portfolio, setPortfolio] = useState('');
+
+  // Stats & Saved Jobs
+  const [stats, setStats] = useState({ avgScore: 78, resumesUploaded: 3, savedJobsCount: 4 });
+  const [savedJobs, setSavedJobs] = useState([]);
+
+  // Resume Upload Simulation State
+  const [parsingResume, setParsingResume] = useState(false);
+  const [parseStep, setParseStep] = useState('');
+  const [parsedFileName, setParsedFileName] = useState('');
+
+  // Load profile data from localStorage or fallback to defaults
+  useEffect(() => {
+    if (!user) return;
+
+    const storageKey = `skillsync_profile_${user.email || 'default'}`;
+    const cachedData = localStorage.getItem(storageKey);
+
+    const defaultSkills = ["React", "JavaScript", "TypeScript", "Tailwind CSS", "HTML5", "CSS3", "Node.js", "Git"];
+    const defaultJobs = [
+      { id: 1, title: "Frontend Engineer", company: "Razorpay", location: "Bengaluru (Remote)", salary: "₹8L - ₹12L / year", url: "https://razorpay.com", category: "React Developer" },
+      { id: 2, title: "React Developer", company: "Swiggy", location: "Bengaluru", salary: "₹12L - ₹18L / year", url: "https://swiggy.com", category: "React Developer" },
+      { id: 3, title: "Full Stack Intern", company: "Zomato", location: "Gurugram", salary: "₹30,000 / month", url: "https://zomato.com", category: "Full Stack Developer" },
+      { id: 4, title: "UI/UX Developer", company: "Paytm", location: "Noida", salary: "₹6L - ₹9L / year", url: "https://paytm.com", category: "Frontend Developer" }
+    ];
+
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData);
+        setFullName(parsed.fullName || user.full_name || '');
+        setHeadline(parsed.headline || 'Full Stack Engineer');
+        setLocation(parsed.location || 'Bengaluru, India');
+        setBio(parsed.bio || 'Passionate developer looking for new opportunities.');
+        setAvatar(parsed.avatar || null);
+        setSkills(parsed.skills || defaultSkills);
+        setGithub(parsed.github || '');
+        setLinkedin(parsed.linkedin || '');
+        setPortfolio(parsed.portfolio || '');
+        setStats(parsed.stats || { avgScore: 78, resumesUploaded: 3, savedJobsCount: 4 });
+        setSavedJobs(parsed.savedJobs || defaultJobs);
+      } catch (e) {
+        console.error("Failed to parse cached profile data", e);
+      }
+    } else {
+      // Fallbacks
+      setFullName(user.full_name || '');
+      setHeadline('Full Stack Engineer');
+      setLocation('Bengaluru, India');
+      setBio('Passionate developer focused on building high-performance web applications, styling clean user interfaces, and aligning skill sets with market-ready roles.');
+      setAvatar(null);
+      setSkills(defaultSkills);
+      setGithub('https://github.com');
+      setLinkedin('https://linkedin.com');
+      setPortfolio('https://portfolio.dev');
+      setStats({ avgScore: 78, resumesUploaded: 3, savedJobsCount: 4 });
+      setSavedJobs(defaultJobs);
+    }
+  }, [user]);
+
+  // Helper to save current state to localStorage
+  const saveProfileToStorage = (updatedFields = {}) => {
+    if (!user) return;
+    const storageKey = `skillsync_profile_${user.email || 'default'}`;
+    
+    const dataToSave = {
+      fullName: updatedFields.fullName !== undefined ? updatedFields.fullName : fullName,
+      headline: updatedFields.headline !== undefined ? updatedFields.headline : headline,
+      location: updatedFields.location !== undefined ? updatedFields.location : location,
+      bio: updatedFields.bio !== undefined ? updatedFields.bio : bio,
+      avatar: updatedFields.avatar !== undefined ? updatedFields.avatar : avatar,
+      skills: updatedFields.skills !== undefined ? updatedFields.skills : skills,
+      github: updatedFields.github !== undefined ? updatedFields.github : github,
+      linkedin: updatedFields.linkedin !== undefined ? updatedFields.linkedin : linkedin,
+      portfolio: updatedFields.portfolio !== undefined ? updatedFields.portfolio : portfolio,
+      stats: updatedFields.stats !== undefined ? updatedFields.stats : stats,
+      savedJobs: updatedFields.savedJobs !== undefined ? updatedFields.savedJobs : savedJobs,
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+  };
+
+  // Handle Form Submit
+  const handleSaveProfile = (e) => {
+    e.preventDefault();
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!fullName.trim()) {
+      setError("Name cannot be empty.");
+      return;
+    }
+
+    try {
+      saveProfileToStorage();
+      setSuccessMsg("Profile information saved successfully!");
+      setTimeout(() => setSuccessMsg(null), 3000);
+    } catch (err) {
+      setError("Failed to save changes. Local storage might be full.");
+    }
+  };
+
+  // Handle Avatar Upload
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError("Please upload an image file.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image size should be less than 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Data = event.target.result;
+      setAvatar(base64Data);
+      saveProfileToStorage({ avatar: base64Data });
+      setSuccessMsg("Profile picture updated!");
+      setTimeout(() => setSuccessMsg(null), 3000);
+    };
+    reader.onerror = () => {
+      setError("Failed to read image file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Trigger file upload dialog for Avatar
+  const triggerAvatarUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Add a new skill
+  const handleAddSkill = (e) => {
+    e.preventDefault();
+    const cleanSkill = newSkill.trim();
+    if (!cleanSkill) return;
+
+    if (skills.some(s => s.toLowerCase() === cleanSkill.toLowerCase())) {
+      setError("Skill already exists in your profile.");
+      setNewSkill('');
+      setTimeout(() => setError(null), 3000);
+      return;
+    }
+
+    const updatedSkills = [...skills, cleanSkill];
+    setSkills(updatedSkills);
+    setNewSkill('');
+    saveProfileToStorage({ skills: updatedSkills });
+  };
+
+  // Delete a skill tag
+  const handleDeleteSkill = (skillToDelete) => {
+    const updatedSkills = skills.filter(s => s !== skillToDelete);
+    setSkills(updatedSkills);
+    saveProfileToStorage({ skills: updatedSkills });
+  };
+
+  // Remove saved job
+  const handleRemoveJob = (jobId) => {
+    const updatedJobs = savedJobs.filter(j => j.id !== jobId);
+    setSavedJobs(updatedJobs);
+    const updatedStats = { ...stats, savedJobsCount: updatedJobs.length };
+    setStats(updatedStats);
+    saveProfileToStorage({ savedJobs: updatedJobs, stats: updatedStats });
+  };
+
+  // Trigger Resume Upload Simulator
+  const handleResumeSimulatedUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setParsedFileName(file.name);
+    setParsingResume(true);
+    setParseStep('Uploading document securely...');
+
+    setTimeout(() => {
+      setParseStep('Parsing text contents and credentials...');
+      
+      setTimeout(() => {
+        setParseStep('Extracting skills, target roles, and metrics...');
+        
+        setTimeout(() => {
+          // Completed Simulation
+          const extractedHeadline = "Lead React Architect";
+          const parsedSkillsToAdd = ["Redux Toolkit", "Next.js", "Docker", "GraphQL", "CI/CD"];
+          
+          // Combine skills and filter duplicates
+          const newSkillsList = [...skills];
+          parsedSkillsToAdd.forEach(skill => {
+            if (!newSkillsList.some(s => s.toLowerCase() === skill.toLowerCase())) {
+              newSkillsList.push(skill);
+            }
+          });
+
+          const newStats = {
+            avgScore: 88,
+            resumesUploaded: stats.resumesUploaded + 1,
+            savedJobsCount: savedJobs.length
+          };
+
+          setHeadline(extractedHeadline);
+          setSkills(newSkillsList);
+          setStats(newStats);
+          setParsingResume(false);
+          setParseStep('');
+
+          saveProfileToStorage({
+            headline: extractedHeadline,
+            skills: newSkillsList,
+            stats: newStats
+          });
+
+          setSuccessMsg(`Resume "${file.name}" parsed! Headline updated to "${extractedHeadline}" and relevant skills added.`);
+          setTimeout(() => setSuccessMsg(null), 5000);
+        }, 800);
+      }, 800);
+    }, 600);
+  };
+
+  return (
+    <div className="flex flex-col gap-8 page-wrapper mx-auto max-w-[1200px] w-full px-6 md:px-8">
+      {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
+      
+      {successMsg && (
+        <div className="fixed bottom-6 right-6 p-4 bg-success-bg border border-success-border rounded-sm text-success font-medium text-sm z-[2000] shadow-2xl flex items-center gap-2 animate-[slideUp_0.95s_cubic-bezier(0.22,1,0.36,1)_forwards]">
+          <span>✨</span>
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {/* Hero Header Section */}
+      <div className="relative p-8 bg-bg-secondary border border-border rounded-md overflow-hidden animate-[scaleIn_0.85s_cubic-bezier(0.22,1,0.36,1)_forwards]">
+        {/* Glow visual background effects */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(62,207,142,0.08)_0%,transparent_60%)] pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-primary to-secondary" />
+
+        <div className="flex max-md:flex-col items-center gap-8 relative z-10">
+          
+          {/* Avatar Upload Container */}
+          <div className="relative group cursor-pointer" onClick={triggerAvatarUpload} title="Click to upload profile photo">
+            <div className="w-28 h-28 rounded-full border-2 border-border overflow-hidden bg-bg-tertiary flex items-center justify-center transition-all duration-300 group-hover:border-primary group-hover:shadow-[0_0_15px_rgba(62,207,142,0.2)]">
+              {avatar ? (
+                <img src={avatar} alt="Profile Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-4xl font-extrabold text-primary select-none">
+                  {fullName ? fullName[0].toUpperCase() : 'U'}
+                </div>
+              )}
+            </div>
+            
+            <div className="absolute inset-0 bg-black/60 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="text-[10px] text-white font-bold uppercase tracking-wider">Change</span>
+              <span className="text-base">📸</span>
+            </div>
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleAvatarChange} 
+              accept="image/*" 
+              className="hidden" 
+            />
+          </div>
+
+          {/* User Details */}
+          <div className="flex-1 max-md:text-center">
+            <h1 className="text-3xl font-extrabold font-headings text-text-primary tracking-tight mb-1">
+              {fullName || 'User Profile'}
+            </h1>
+            <p className="text-primary font-semibold text-sm mb-3 tracking-wide">{headline}</p>
+            
+            <div className="flex max-md:justify-center items-center gap-2 text-text-secondary text-xs mb-4">
+              <span>📍</span>
+              <span>{location}</span>
+              <span className="text-border">|</span>
+              <span>✉️</span>
+              <span>{user?.email || 'user@example.com'}</span>
+            </div>
+
+            {/* Social Icons */}
+            <div className="flex max-md:justify-center gap-3">
+              {github && (
+                <a href={github} target="_blank" rel="noopener noreferrer" className="p-2 rounded-sm bg-bg-tertiary border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-all duration-300 text-xs flex items-center gap-1.5 no-underline">
+                  <span>💻</span> GitHub
+                </a>
+              )}
+              {linkedin && (
+                <a href={linkedin} target="_blank" rel="noopener noreferrer" className="p-2 rounded-sm bg-bg-tertiary border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-all duration-300 text-xs flex items-center gap-1.5 no-underline">
+                  <span>👔</span> LinkedIn
+                </a>
+              )}
+              {portfolio && (
+                <a href={portfolio} target="_blank" rel="noopener noreferrer" className="p-2 rounded-sm bg-bg-tertiary border border-border text-text-secondary hover:text-text-primary hover:border-border-hover transition-all duration-300 text-xs flex items-center gap-1.5 no-underline">
+                  <span>🌐</span> Portfolio
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Quick-info Cards */}
+      <div className="grid grid-cols-3 gap-6 max-md:grid-cols-1 stagger-1">
+        <div className="p-6 bg-bg-secondary border border-border rounded-md flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-primary group-hover:h-full transition-all" />
+          <span className="text-xs text-text-secondary font-semibold uppercase tracking-wider mb-2">Average Match Score</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-primary font-headings">{stats.avgScore}%</span>
+            <span className="text-xs text-success-border font-medium">✓ Industry Ready</span>
+          </div>
+        </div>
+
+        <div className="p-6 bg-bg-secondary border border-border rounded-md flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-info group-hover:h-full transition-all" />
+          <span className="text-xs text-text-secondary font-semibold uppercase tracking-wider mb-2">Resumes Analyzed</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-text-primary font-headings">{stats.resumesUploaded}</span>
+            <span className="text-xs text-text-secondary font-medium">Versions Saved</span>
+          </div>
+        </div>
+
+        <div className="p-6 bg-bg-secondary border border-border rounded-md flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 bottom-0 w-[3px] bg-warning group-hover:h-full transition-all" />
+          <span className="text-xs text-text-secondary font-semibold uppercase tracking-wider mb-2">Saved Openings</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-text-primary font-headings">{stats.savedJobsCount}</span>
+            <span className="text-xs text-text-secondary font-medium">Active Applications</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Layout Split */}
+      <div className="grid grid-cols-[2fr_1.2fr] gap-8 max-lg:grid-cols-1">
+        
+        {/* Left Hand side: Form & Saved Jobs */}
+        <div className="flex flex-col gap-8">
+          
+          {/* Edit Profile Form */}
+          <div className="p-8 bg-bg-secondary border border-border rounded-md stagger-2">
+            <h2 className="text-xl font-bold font-headings text-text-primary border-b border-border pb-4 mb-6">
+              Account Profile Settings
+            </h2>
+
+            <form onSubmit={handleSaveProfile} className="flex flex-col gap-6">
+              <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="name-input" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    Full Name
+                  </label>
+                  <input
+                    id="name-input"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Enter your name"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="email-input" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    Email Address
+                  </label>
+                  <input
+                    id="email-input"
+                    type="email"
+                    value={user?.email || 'user@example.com'}
+                    disabled
+                    className="bg-bg-tertiary cursor-not-allowed opacity-80"
+                    title="Account email address cannot be changed."
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="headline-input" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    Headline / Target Role
+                  </label>
+                  <input
+                    id="headline-input"
+                    type="text"
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    placeholder="e.g. Lead Frontend Engineer"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="location-input" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                    Location
+                  </label>
+                  <input
+                    id="location-input"
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Bengaluru, India"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label htmlFor="bio-input" className="text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  Professional Bio / Summary
+                </label>
+                <textarea
+                  id="bio-input"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  rows="4"
+                  className="resize-none"
+                />
+              </div>
+
+              {/* Social links Inputs */}
+              <div className="border-t border-border pt-6 flex flex-col gap-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-text-primary">Social Profiles</h3>
+                
+                <div className="grid grid-cols-3 gap-4 max-md:grid-cols-1">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="github-input" className="text-[11px] font-semibold text-text-secondary">GitHub URL</label>
+                    <input
+                      id="github-input"
+                      type="url"
+                      value={github}
+                      onChange={(e) => setGithub(e.target.value)}
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="linkedin-input" className="text-[11px] font-semibold text-text-secondary">LinkedIn URL</label>
+                    <input
+                      id="linkedin-input"
+                      type="url"
+                      value={linkedin}
+                      onChange={(e) => setLinkedin(e.target.value)}
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="portfolio-input" className="text-[11px] font-semibold text-text-secondary">Portfolio URL</label>
+                    <input
+                      id="portfolio-input"
+                      type="url"
+                      value={portfolio}
+                      onChange={(e) => setPortfolio(e.target.value)}
+                      placeholder="https://mywebsite.com"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary self-start mt-2">
+                Save Profile Changes
+              </button>
+            </form>
+          </div>
+
+          {/* Saved Jobs Board List */}
+          <div className="p-8 bg-bg-secondary border border-border rounded-md stagger-3">
+            <div className="flex justify-between items-center border-b border-border pb-4 mb-6">
+              <h2 className="text-xl font-bold font-headings text-text-primary">
+                Saved Careers & Jobs
+              </h2>
+              <span className="badge badge-info">{savedJobs.length} Saved</span>
+            </div>
+
+            {savedJobs.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {savedJobs.map((job) => (
+                  <div key={job.id} className="p-5 bg-bg-tertiary border border-border rounded-sm hover:border-primary/45 hover:shadow-lg transition-all duration-300 flex justify-between items-center max-sm:flex-col max-sm:items-start max-sm:gap-4">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-text-primary text-base m-0">{job.title}</h4>
+                        <span className="badge badge-success text-[10px] py-0.5">{job.category}</span>
+                      </div>
+                      <p className="text-xs text-text-secondary font-semibold m-0">{job.company} • <span className="font-normal text-text-tertiary">{job.location}</span></p>
+                      <p className="text-[11px] text-primary m-0 font-medium">{job.salary}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-primary btn-sm no-underline"
+                      >
+                        Apply Now
+                      </a>
+                      <button
+                        onClick={() => handleRemoveJob(job.id)}
+                        className="p-2 text-error hover:bg-error-bg rounded-sm border border-transparent hover:border-error-border transition-colors cursor-pointer"
+                        title="Remove from saved jobs"
+                        aria-label="Remove job"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 text-center bg-bg-tertiary border border-dashed border-border rounded-sm text-text-secondary">
+                <span className="text-3xl block mb-2">💼</span>
+                <p className="text-sm m-0">You have no saved jobs. Head over to the Jobs Board to explore live matches.</p>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Right Hand side: Skills list & Mock Parser */}
+        <div className="flex flex-col gap-8 lg:sticky lg:top-[88px] stagger-4">
+          
+          {/* Skills Management */}
+          <div className="p-6 bg-bg-secondary border border-border rounded-md">
+            <h3 className="text-lg font-bold font-headings text-text-primary border-b border-border pb-3 mb-4 flex justify-between items-center">
+              <span>My Skill Matrix</span>
+              <span className="text-xs font-normal text-text-secondary">{skills.length} skills</span>
+            </h3>
+
+            {/* Tags wrapper */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {skills.map((skill, index) => (
+                <span 
+                  key={index} 
+                  className="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-semibold bg-bg-tertiary border border-border text-text-secondary hover:text-text-primary hover:border-primary/40 transition-colors"
+                >
+                  {skill}
+                  <button 
+                    type="button" 
+                    onClick={() => handleDeleteSkill(skill)}
+                    className="w-3.5 h-3.5 rounded-full hover:bg-error-bg hover:text-error flex items-center justify-center text-[9px] border-none p-0 cursor-pointer font-bold leading-none"
+                    title={`Remove ${skill}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            {/* Add skill input */}
+            <form onSubmit={handleAddSkill} className="flex gap-2">
+              <input
+                type="text"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                placeholder="Add skill tag..."
+                className="grow"
+                maxLength="24"
+              />
+              <button type="submit" className="btn btn-secondary px-4">
+                Add
+              </button>
+            </form>
+          </div>
+
+          {/* Resume Parser Simulation Card */}
+          <div className="p-6 bg-bg-secondary border border-border rounded-md relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-secondary" />
+
+            <h3 className="text-lg font-bold font-headings text-text-primary mb-2 flex items-center gap-2">
+              <span>Smart Resume Sync</span>
+              <span className="badge badge-warning text-[9px]">Simulated</span>
+            </h3>
+            
+            <p className="text-xs text-text-secondary leading-relaxed mb-4">
+              Simulate uploading a newer resume document to scan credentials, update your role profile, and inject missing skills automatically in real-time.
+            </p>
+
+            {parsingResume ? (
+              <div className="p-6 bg-bg-tertiary border border-border rounded-sm flex flex-col items-center justify-center text-center gap-4 animate-pulse">
+                <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">AI Analyzer Running</span>
+                  <span className="text-[11px] text-text-secondary">{parseStep}</span>
+                </div>
+                <span className="text-[10px] text-text-tertiary font-mono italic">{parsedFileName}</span>
+              </div>
+            ) : (
+              <div 
+                className="p-6 bg-bg-tertiary border border-dashed border-border rounded-sm hover:border-primary/50 transition-all duration-300 flex flex-col items-center justify-center text-center gap-3 cursor-pointer group"
+                onClick={() => resumeInputRef.current && resumeInputRef.current.click()}
+              >
+                <div className="text-3xl group-hover:scale-110 transition-transform">📄</div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xs font-bold text-text-primary group-hover:text-primary transition-colors">Select Resume Document</span>
+                  <span className="text-[10px] text-text-tertiary">PDF, DOCX, or TXT (Max 5MB)</span>
+                </div>
+                <input
+                  type="file"
+                  ref={resumeInputRef}
+                  onChange={handleResumeSimulatedUpload}
+                  accept=".pdf,.docx,.doc,.txt"
+                  className="hidden"
+                />
+              </div>
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  );
+}
