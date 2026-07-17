@@ -25,6 +25,8 @@ def hash_password(password: str) -> str:
         salt,
         100000,  # 100k iterations
     )
+
+    #salt for unique passwrod for every user 
     return f"{salt.hex()}:{key.hex()}"
 
 
@@ -58,7 +60,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
-    # exp claim must be an integer epoch timestamp
     to_encode.update({"exp": int(expire.timestamp())})
     
     encoded_jwt = jwt.encode(
@@ -68,6 +69,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     )
     return encoded_jwt
 
+def isAdmin(role:str)-> bool:
+    """This function is to check if the current user is admin or not."""
+    return role=="admin"
+    
 
 def decode_access_token(token: str) -> Optional[dict]:
     """Decode and validate a JWT access token. Returns payload if valid, otherwise None."""

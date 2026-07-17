@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 export default function JobCard({ job }) {
   const {
     title,
@@ -9,6 +11,45 @@ export default function JobCard({ job }) {
     platform,
   } = job;
 
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('tracked_applications');
+    if (saved) {
+      const apps = JSON.parse(saved);
+      const matchedApp = apps.find(app => app.title === title && app.company === company);
+      setStatus(matchedApp ? matchedApp.status : '');
+    }
+  }, [title, company]);
+
+  const handleStatusChange = (newStatus) => {
+    const saved = localStorage.getItem('tracked_applications') || '[]';
+    let apps = JSON.parse(saved);
+
+    // Remove existing matching entry if any
+    apps = apps.filter(app => !(app.title === title && app.company === company));
+
+    if (newStatus) {
+      const newApp = {
+        id: Date.now() + Math.random().toString(36).substr(2, 9),
+        title,
+        company,
+        location,
+        salary,
+        experience,
+        link,
+        platform,
+        status: newStatus,
+        date: new Date().toISOString()
+      };
+      apps.push(newApp);
+      setStatus(newStatus);
+    } else {
+      setStatus('');
+    }
+    localStorage.setItem('tracked_applications', JSON.stringify(apps));
+  };
+
   const isInternshala = platform?.toLowerCase() === 'internshala';
   const platformClass = isInternshala 
     ? 'bg-info/10 text-info border-info/20' 
@@ -17,7 +58,7 @@ export default function JobCard({ job }) {
   return (
     <div className="flex flex-col h-full p-6 bg-bg-secondary border border-border rounded-md relative overflow-hidden transition-all duration-650 hover:border-primary hover:bg-bg-card-hover animate-[scaleIn_0.85s_cubic-bezier(0.22,1,0.36,1)_forwards]">
       <div className="flex justify-between items-start gap-4 mb-4">
-        <h4 className="font-headings text-base font-bold text-text-primary m-0 line-clamp-2 h-[2.6em] leading-snug" title={title}>
+        <h4 className="font-headings text-base font-bold text-text-primary m-0 line-clamp-2 h-[2.6em] leading-snug grow" title={title}>
           {title}
         </h4>
         <span className={`shrink-0 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${platformClass}`}>
@@ -26,8 +67,12 @@ export default function JobCard({ job }) {
       </div>
       
       <div className="grow flex flex-col gap-1 mb-6">
-        <p className="font-semibold text-text-primary m-0 text-sm">🏢 {company}</p>
-        <p className="text-text-secondary text-sm m-0">📍 {location || 'Remote / Not specified'}</p>
+        <p className="text-text-secondary m-0 text-sm">
+          <span className="font-semibold text-text-primary">Company: </span> {company}
+        </p>
+        <p className="text-text-secondary text-sm m-0">
+          <span className="font-semibold text-text-primary">Location: </span> {location || 'Remote / Not specified'}
+        </p>
         
         <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-border">
           <div className="flex flex-col gap-0.5">
@@ -45,10 +90,39 @@ export default function JobCard({ job }) {
         </div>
       </div>
 
-      <div className="mt-auto">
-        <a href={link} target="_blank" rel="noopener noreferrer" className="w-full btn btn-primary text-center">
-          Apply Now 🔗
+      <div className="mt-auto flex gap-2 w-full">
+        <a 
+          href={link} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="btn btn-primary text-center grow flex items-center justify-center text-sm gap-1"
+        >
+          Apply Now
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" y1="14" x2="21" y2="3" />
+          </svg>
         </a>
+        <select 
+          value={status} 
+          onChange={(e) => handleStatusChange(e.target.value)}
+          className="btn btn-secondary text-sm font-sans"
+          style={{
+            width: 'auto',
+            minWidth: '120px',
+            cursor: 'pointer',
+            outline: 'none',
+            padding: '8px 12px',
+          }}
+          title="Track this job application"
+        >
+          <option value="">Track Job</option>
+          <option value="wishlist">Wishlist</option>
+          <option value="applied">Applied</option>
+          <option value="interviewing">Interview</option>
+          <option value="offered">Offered</option>
+          <option value="rejected">Rejected</option>
+        </select>
       </div>
     </div>
   );

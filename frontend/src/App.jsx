@@ -7,6 +7,8 @@ import SettingsPage from './pages/SettingsPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import TrackerPage from './pages/TrackerPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 
@@ -17,6 +19,8 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/tracker" element={<TrackerPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route 

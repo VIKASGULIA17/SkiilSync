@@ -134,7 +134,25 @@ async def login(body: UserLogin, db: Session = Depends(get_db)) -> TokenResponse
     )
 
 
+
+
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     """Return the currently logged-in user's profile details."""
     return UserResponse.model_validate(current_user)
+
+
+@router.get("/is_admin")
+def isAdmin(current_user:User = Depends(get_current_user))-> bool:
+    """Checks if the current user is admin or not"""
+
+    isAdminCheck= "admin" in current_user.role
+    return isAdminCheck
+
+@router.get("/is_user")
+def isUser(current_user:User = Depends(get_current_user))-> bool:
+    """Checks if the current user is admin or not"""
+    isUserCheck= "user" in current_user.role
+    return isUserCheck
+
+

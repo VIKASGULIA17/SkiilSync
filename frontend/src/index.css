@@ -185,6 +185,13 @@ html[data-theme="light"] {
   padding-top: calc(var(--navbar-height) + 2.5rem);
   padding-bottom: 5rem;
   min-height: 100vh;
+  width: 100%;
+  max-width: var(--container-max);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-lg);
+  padding-right: var(--space-lg);
+  box-sizing: border-box;
 }
 
 

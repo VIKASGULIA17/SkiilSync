@@ -161,6 +161,7 @@ class User(Base):  # type: ignore[misc]
     hashed_password: str = Column(String(255), nullable=False)
     full_name: str = Column(String(255), nullable=False, default="")
     created_at: datetime = Column(DateTime, server_default=func.now(), nullable=False)
+    role: str = Column(String(20), nullable=False, default="user")
 
 
 class UserCreate(BaseModel):
@@ -169,6 +170,7 @@ class UserCreate(BaseModel):
     email: str
     password: str
     full_name: str
+    role:str
 
 
 class UserLogin(BaseModel):
@@ -185,6 +187,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     created_at: datetime
+    role:str
 
     model_config = ConfigDict(from_attributes=True)
 
