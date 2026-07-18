@@ -13,8 +13,10 @@ from typing import List
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
-from app.models import AnalysisResponse, FeedbackRequest, FeedbackResponse, RoleAnalysisRequest, RoleScore
+from app.schema import AnalysisResponse, FeedbackRequest, FeedbackResponse, RoleAnalysisRequest, RoleScore
+
 from app.services import ai_feedback, resume_parser, skills_db
+
 from app.services.gap_analyzer import evaluate_resume
 
 logger = logging.getLogger(__name__)

@@ -15,7 +15,11 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from app.database import get_db, SessionLocal
-from app.models import Job, JobListResponse, JobResponse, ScrapeStatus, ScrapeStatusResponse
+
+from app.models import Job, ScrapeStatus
+
+from app.schema import JobListResponse, JobResponse, ScrapeStatusResponse
+
 from app.services.job_scraper import scrape_and_store_jobs
 
 logger = logging.getLogger(__name__)

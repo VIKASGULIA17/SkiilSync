@@ -134,3 +134,8 @@ export async function signup(email, password, fullName) {
 export async function getMe() {
   return request('/auth/me');
 }
+
+
+export async function getIsAdmin(){
+  return request('/auth/is_admin')
+}

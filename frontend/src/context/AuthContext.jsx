@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, signup as apiSignup, getMe } from '../api/client.js';
+import { login as apiLogin, signup as apiSignup, getIsAdmin, getMe } from '../api/client.js';
 
 const AuthContext = createContext(null);
 
@@ -7,6 +7,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAdmin, setisAdmin] = useState(false)
 
   useEffect(() => {
     async function initAuth() {
@@ -56,6 +57,23 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
   }
+  async function isadmin(){
+    setLoading(true)
+    try{
+      const token = localStorage.getItem('token');
+
+      if(token){
+        const status=await getIsAdmin();
+        setisAdmin(status)
+
+      }
+    }catch(err){
+      setError(err.message | "Failed to find admin status")
+    }finally{
+      setLoading(false);
+    }
+  }
+  
 
   function logout() {
     localStorage.removeItem('token');

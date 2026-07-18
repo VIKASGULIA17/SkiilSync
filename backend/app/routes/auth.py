@@ -12,13 +12,15 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from app.database import get_db
-from app.models import (
-    User,
+from app.schema import (
     UserCreate,
     UserLogin,
     UserResponse,
     TokenResponse,
 )
+
+from app.models import User
+
 from app.services.security import (
     hash_password,
     verify_password,
@@ -134,8 +136,6 @@ async def login(body: UserLogin, db: Session = Depends(get_db)) -> TokenResponse
     )
 
 
-
-
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)) -> UserResponse:
     """Return the currently logged-in user's profile details."""
@@ -156,3 +156,31 @@ def isUser(current_user:User = Depends(get_current_user))-> bool:
     return isUserCheck
 
 
+@router.get("/get_all_users", response_model=list[UserResponse])
+def get_all_users(isAdmin:bool= Depends(isAdmin),db: Session=Depends(get_db)) ->list[UserResponse]:
+
+    if(isAdmin):
+
+        #command to fetch all the users
+        allUsers = list(db.query(User).filter(User.role == "user"))
+
+        if(len(allUsers)==0):
+            return []
+        else:
+            return allUsers
+        
+
+@router.get("/get_all_admins", response_model=list[UserResponse])
+def get_all_admind(isAdmin:bool= Depends(isAdmin),db: Session=Depends(get_db)) ->list[UserResponse]:
+
+    if(isAdmin):
+
+        #command to fetch all the users
+        allAdmins = list(db.query(User).filter(User.role == "admin"))
+
+        if(len(allAdmins)==0):
+            return []
+        else:
+            return allAdmins
+
+    

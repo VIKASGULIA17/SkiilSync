@@ -10,7 +10,7 @@ import logging
 from fastapi import APIRouter, HTTPException
 
 from app.config import get_api_key, set_runtime_api_key
-from app.models import ApiKeyRequest, ApiKeyStatusResponse
+from app.schema import ApiKeyRequest, ApiKeyStatusResponse
 
 logger = logging.getLogger(__name__)
 
