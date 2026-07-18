@@ -109,6 +109,16 @@ export default function Navbar() {
             <span className="text-sm leading-none">⚙️</span>
             Settings
           </NavLink>
+          {user && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `flex items-center gap-1.5 px-4 py-2 rounded-sm text-sm font-medium text-text-secondary hover:text-text-primary hover:bg-bg-tertiary transition-all duration-300 relative ${isActive ? 'text-text-primary bg-bg-tertiary border-b-2 border-primary md:rounded-b-none max-md:border-b-0 max-md:border-l-2 max-md:rounded-l-none' : ''}`}
+              onClick={handleLinkClick}
+            >
+              <span className="text-sm leading-none">🛡️</span>
+              Admin
+            </NavLink>
+          )}
 
           {user ? (
             <>
