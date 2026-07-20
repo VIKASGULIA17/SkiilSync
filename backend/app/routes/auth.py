@@ -19,7 +19,7 @@ from app.schema import (
     TokenResponse,
 )
 
-from app.models import User
+from app.models import User , UserProfile
 
 from app.services.security import (
     hash_password,
@@ -99,6 +99,7 @@ async def signup(body: UserCreate, db: Session = Depends(get_db)) -> TokenRespon
         email=email,
         hashed_password=hashed,
         full_name=full_name,
+        profile= UserProfile()
     )
     db.add(new_user)
     db.commit()
