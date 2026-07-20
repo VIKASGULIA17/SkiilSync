@@ -81,6 +81,7 @@ async def changeProfileInfo(body:ProfileInfoChange ,
 
 
     except Exception as exc:
+        db.rollback()
         logger.exception("Failed to update User Profile")
         raise HTTPException(status_code=500,detail=f"failed to update user Profile :{exc}")
     finally:
@@ -90,7 +91,34 @@ async def changeProfileInfo(body:ProfileInfoChange ,
 
 
 
+@router.post("/user_profile/skill_set/update",response_model=bool)
+async def updateSkillSet(body:ProfileSkillsMatrixChange,
+                         db:Session = Depends(get_db),
+                         current_user= Depends(get_current_user)
+                         )-> bool :
+    print("updating user profile")
 
+    try:
+        user_profile =db.query(UserProfile).filter(UserProfile.user_id==current_user.id).first()
+
+        if(user_profile is None):
+            raise HTTPException(status_code=404,detail=f"User doesn't exist with user id :{current_user.id}")
+        
+        updates=body.model_dump(exclude_unset=True,mode="json")
+
+        user_profile.skill_matrix=updates.skill_matrix
+
+        db.commit()
+
+        return True
+    
+    except Exception as esc:
+        logger.exception("Failed to update skill set")
+        raise HTTPException(status_code=500,detail=f"error occured while updating skill set ,{esc}")
+    
+    finally:
+        db.close()
+    
 
 
 
